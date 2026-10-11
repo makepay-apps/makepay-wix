@@ -40,6 +40,20 @@ A connected provider on a free site still cannot accept payments. Enable a comme
 
 Use a product in your store currency above the MakePay minimum. Check the amount on hosted checkout. Returning without paying must leave the order unpaid. A confirmed payment should update the original Wix transaction through a signed callback. Replay that delivery to verify duplicate protection. See [testing evidence and remaining live checks](TESTING.md).
 
+## Installed currency checks
+
+The installed connector was exercised through Wix Editor's backend test runner using synthetic PSP arguments and the actual private collection, backend secrets and MakePay API. These are checkout-creation checks; they do not replace a funded native Wix order.
+
+![Wix backend-created checkout preserves the 10 USD price](screenshots/07-runtime-usd-checkout.png)
+
+![A separate Wix backend-created checkout preserves the 10 EUR price](screenshots/08-runtime-eur-checkout.png)
+
+The same USD transaction reused its original link on a second call. A request that changed the reserved currency to EUR was rejected. A new EUR transaction created its own link.
+
+The native storefront's $10 USD QA product reached checkout with the correct total, but the free site plan blocked payment selection:
+
+![Native Wix checkout requires a payment-enabled site plan](screenshots/09-native-checkout-plan-required.png)
+
 ## Price currency and settlement
 
 Wix's connection page includes a standard currency-matching notice. MakePay has no fixed account fiat currency: each payment link uses the store currency sent as `fiatCurrency`. EUR prices stay EUR and USD prices stay USD. The configured crypto settlement asset is separate. The connector converts Wix minor units using the currency precision (JPY has zero decimals; KWD has three).

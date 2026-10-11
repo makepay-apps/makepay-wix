@@ -19,6 +19,21 @@ Actual HTTPS POST checks against the published HTTP function:
 | Valid signed pending event | 200; unpaid |
 | Valid signed complete event for unknown checkout | 404; no approval |
 
+## Installed checkout creation and retry checks
+
+Executed the installed `Backend/MakePay.js` function using Wix Editor's backend test runner against live Secrets Manager, the private CMS collection and the production MakePay API. These tests used synthetic PSP transaction/order IDs, not a native Wix customer order. The approved Demo Shop 2 credentials remained private.
+
+| Runtime case | Observed result |
+| --- | --- |
+| New USD transaction, `totalAmount: 1000` | Hosted checkout displayed **10 USD** |
+| Repeat the same USD transaction | Returned the same plugin transaction ID and checkout URL |
+| Change that reserved transaction to EUR | Rejected with `TRANSACTION_CREATION_FAILED`: `Transaction details changed.` |
+| New EUR transaction, `totalAmount: 1000` | Hosted checkout displayed **10 EUR** |
+
+The installed connector's creation path successfully reserved and updated its private transaction records. No payment was funded and no completion event was submitted for these synthetic IDs. See the [runtime screenshots](TUTORIAL.md#installed-currency-checks).
+
+A dedicated $10 USD QA product was also saved and added to the native storefront cart. Native checkout displayed the correct $10 subtotal, free delivery and $10 total, then stopped at **We can’t accept online payments**. This verifies the site-plan blocker directly.
+
 ## Live completion remains required
 
 The test site currently has a free plan: Wix displays **Not accepting payments** and requests an upgrade. No funded Wix checkout or live `submitEvent` completion has been performed. Before production use, enable payments, create a real Wix order, verify its hosted amount, fund a controlled checkout, verify the original order is paid, and replay its signed delivery. Local tests and credential connection are not proof of funded settlement.
