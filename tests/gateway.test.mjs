@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createHmac } from 'node:crypto';
+import crypto from 'crypto-js';
+const source=readFileSync(new URL('../Backend/MakePay.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/export /g,'');
+function fixture(){
+ const records=new Map(),calls=[],events=[];let failure=false;
+ const data={get:async(_,id)=>records.get(id)||null,insert:async(_,item)=>{if(records.has(item._id))throw Error('Duplicate');records.set(item._id,item);return item;},update:async(_,item)=>{records.set(item._id,item);return item;},query:()=>({eq(_,uid){return{find:async()=>({items:[...records.values()].filter(x=>x.linkUid===uid)})};}})};
+ const fetch=async(url,options)=>{calls.push({url,...options});return{ok:true,json:async()=>({paymentLink:{uid:'mp_1',publicUrl:'https://www.makepay.io/pay/mp_1'}})};};
+ const provider={submitEvent:async e=>{if(failure)throw Error('Temporary');events.push(e);}};
+ const secret=async name=>name==='makepay_webhook_secret'?'test-secret':'api-secret';
+ const mod=new Function('crypto','fetch','wixData','wixPaymentProviderBackend','getSecret','response',`${source}\nreturn {connect,createTransaction,notify,minorUnitsToUsd,verifyMakePaySignature,refundTransaction};`)(crypto,fetch,data,provider,secret,x=>x);
+ return{mod,records,calls,events,fail:v=>{failure=v;}};
+}
+const checkout=()=>({wixTransactionId:'tx_1',merchantCredentials:{company_id:'company_1',api_key_id:'key_1'},order:{_id:'order_1',description:{totalAmount:'12999',currency:'USD',billingAddress:{email:'demo@example.test'}},returnUrls:{successUrl:'https://merchant.example/success',errorUrl:'https://merchant.example/error',cancelUrl:'https://merchant.example/cancel',pendingUrl:'https://merchant.example/pending'}}});
+const event=()=>({type:'makepay.payment.status_changed',paymentLink:{uid:'mp_1',merchantOrderId:'wix_tx_1',amount:'129.99',currency:'USD'},session:{id:'session_1',status:'complete'}});
+function request(value,delta=0){const raw=typeof value==='string'?value:JSON.stringify(value),t=Math.floor(Date.now()/1000)+delta,sig=createHmac('sha256','test-secret').update(`${t}.${raw}`).digest('hex');return{body:{text:async()=>raw},headers:{'x-makepay-signature':`t=${t},v1=${sig}`}};}
+test('published Wix minor-unit contract creates the correct USD checkout',async()=>{const f=fixture(),r=await f.mod.createTransaction(checkout());assert.equal(r.pluginTransactionId,'mp_1');const p=JSON.parse(f.calls[0].body);assert.equal(p.payload.amount,'129.99');assert.equal(p.payload.currency,'USD');assert.equal(p.source,'wix');assert.equal(p.payload.failureUrl,'https://merchant.example/error');assert.equal(f.calls[0].headers['X-MakeCrypto-Key-Secret'],'api-secret');});
+test('connect returns account ID',async()=>{assert.equal((await fixture().mod.connect({credentials:checkout().merchantCredentials})).accountId,'company_1');});
+test('concurrent and repeated creation send one API request',async()=>{const f=fixture();await Promise.all([f.mod.createTransaction(checkout()),f.mod.createTransaction(checkout())]);await f.mod.createTransaction(checkout());assert.equal(f.calls.length,1);});
+test('unsupported currency and malformed amounts fail safely',async()=>{const f=fixture(),o=checkout();o.order.description.currency='AED';assert.equal((await f.mod.createTransaction(o)).errorCode,'TRANSACTION_CREATION_FAILED');for(const v of ['0','-1','1.3','Infinity','9007199254740992'])assert.throws(()=>f.mod.minorUnitsToUsd(v));assert.equal(f.mod.minorUnitsToUsd('1'),'0.01');});
+test('complete callback submits original Wix transaction once',async()=>{const f=fixture();await f.mod.createTransaction(checkout());assert.equal((await f.mod.notify(request(event()))).status,200);assert.equal((await f.mod.notify(request(event()))).status,200);assert.equal(f.events.length,1);assert.deepEqual(f.events[0],{event:{transaction:{wixTransactionId:'tx_1',pluginTransactionId:'mp_1'}}});});
+test('non-complete and misleading statuses never approve',async()=>{const f=fixture();await f.mod.createTransaction(checkout());for(const status of ['underpaid','pending','failed','expired','unpaid','incomplete','deposit_received']){const e=event();e.session.status=status;assert.equal((await f.mod.notify(request(e))).status,200);}assert.equal(f.events.length,0);});
+test('tampered, stale and future signatures fail',async()=>{const f=fixture();await f.mod.createTransaction(checkout());for(const delta of [-301,301])assert.equal((await f.mod.notify(request(event(),delta))).status,401);const r=request(event());r.body.text=async()=>JSON.stringify({...event(),changed:true});assert.equal((await f.mod.notify(r)).status,401);});
+test('unknown link, mismatched currency, order and amount fail',async()=>{const f=fixture();await f.mod.createTransaction(checkout());for(const patch of [{uid:'other'},{amount:'0.01'},{currency:'EUR'},{merchantOrderId:'wix_other'}]){const e=event();Object.assign(e.paymentLink,patch);assert.ok([400,404].includes((await f.mod.notify(request(e))).status));}assert.equal(f.events.length,0);});
+test('temporary Wix failure retries successfully',async()=>{const f=fixture();await f.mod.createTransaction(checkout());f.fail(true);assert.equal((await f.mod.notify(request(event()))).status,503);f.fail(false);assert.equal((await f.mod.notify(request(event()))).status,200);});
+test('malformed JSON never approves and manual refund is explicit',async()=>{const f=fixture();assert.equal((await f.mod.notify(request('{broken'))).status,503);assert.equal((await f.mod.refundTransaction()).errorCode,'REFUND_NOT_SUPPORTED');});
