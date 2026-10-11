@@ -18,6 +18,14 @@ Actual HTTPS POST checks against the published HTTP function:
 | Signature older than five minutes | 401 |
 | Valid signed pending event | 200; unpaid |
 | Valid signed complete event for unknown checkout | 404; no approval |
+| Known USD checkout, wrong fiat amount | 400; rejected |
+| Known USD checkout, wrong fiat currency | 400; rejected |
+| Known USD checkout, wrong order reference | 400; rejected |
+| Known EUR checkout, USD fiat currency | 400; rejected |
+| Known USD checkout, underpaid status | 200; ignored |
+| Known USD checkout, failed status | 200; ignored |
+
+All ten published endpoint cases passed using the installed site's real signing secret. The known-checkout cases used the USD/EUR synthetic transactions described below, so the rejection checks exercised the live private collection. No matching complete event was submitted for those test transactions.
 
 ## Installed checkout creation and retry checks
 
@@ -34,7 +42,15 @@ The installed connector's creation path successfully reserved and updated its pr
 
 A dedicated $10 USD QA product was also saved and added to the native storefront cart. Native checkout displayed the correct $10 subtotal, free delivery and $10 total, then stopped at **We can’t accept online payments**. This verifies the site-plan blocker directly.
 
-## Live completion remains required
+## Testing without buying a plan
+
+QA is being performed without purchasing or upgrading a Wix subscription. The installed backend runner, real MakePay USD/EUR link creation, retry checks and published HTTPS webhook checks work on the free site. Native order completion is covered locally with Wix SDK adapters; this does not establish a live customer checkout result.
+
+Wix also documents [owner-only test orders](https://support.wix.com/en/article/previewing-the-checkout-process-1420066) on a free site, using a manual payment option and the site's Members Area. The QA manual option has been prepared, but this flow is awaiting owner storefront sign-in. It has not yet been verified with MakePay and a manual test order alone would not prove the custom provider flow.
+
+Wix's separate [free development sites](https://dev.wix.com/docs/build-apps/launch-your-app/app-distribution/test-your-app/test-your-app-on-a-premium-site) include Premium capabilities. Access in the current account prompts migration of all existing sites into a Studio workspace; that account-wide change has not been applied.
+
+## Production checkout validation
 
 The test site currently has a free plan: Wix displays **Not accepting payments** and requests an upgrade. No funded Wix checkout or live `submitEvent` completion has been performed. Before production use, enable payments, create a real Wix order, verify its hosted amount, fund a controlled checkout, verify the original order is paid, and replay its signed delivery. Local tests and credential connection are not proof of funded settlement.
 
