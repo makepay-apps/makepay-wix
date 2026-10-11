@@ -38,7 +38,11 @@ Executed the installed `Backend/MakePay.js` function using Wix Editor's backend 
 | Change that reserved transaction to EUR | Rejected with `TRANSACTION_CREATION_FAILED`: `Transaction details changed.` |
 | New EUR transaction, `totalAmount: 1000` | Hosted checkout displayed **10 EUR** |
 
-The installed connector's creation path successfully reserved and updated its private transaction records. No payment was funded and no completion event was submitted for these synthetic IDs. See the [runtime screenshots](TUTORIAL.md#installed-currency-checks).
+The installed connector's creation path successfully reserved and updated its private transaction records. No payment was funded and no completion event was submitted for these synthetic IDs. The installed checkout results are shown below:
+
+![Installed backend test creates a 10 USD checkout](screenshots/07-runtime-usd-checkout.png)
+
+![Installed backend test creates a separate 10 EUR checkout](screenshots/08-runtime-eur-checkout.png)
 
 A dedicated $10 USD QA product was also saved and added to the native storefront cart. Ordinary customer checkout stopped at **We can’t accept online payments**. Signing into the Members Area with the site owner's account unlocked Wix's free test-order route, described below.
 
@@ -58,7 +62,17 @@ Wix documents [owner-only test orders](https://support.wix.com/en/article/previe
 | Expand the native member order details | **Paid: $10.00**, **Balance due: $0.00**, **Paid with Pay with crypto · MakePay** |
 | Inspect the Wix administration Orders list | Original order **#10001** showed **Paid**, $10.00 and customer MakePay QA |
 
-The completion event was simulated with an explicitly QA session ID. MakePay received no funds and no real completed payment session was created. The native paid amount and zero balance verify Wix's test-order update after the callback; they do not prove funded settlement. See the [name-free owner-test screenshots](TUTORIAL.md#free-owner-test-order).
+The completion event was simulated with an explicitly QA session ID. MakePay received no funds and no real completed payment session was created. The native paid amount and zero balance verify Wix's test-order update after the callback; they do not prove funded settlement. The screenshots below document this QA sequence:
+
+![Free owner test-order option](screenshots/10-free-owner-test-option.png)
+
+![MakePay selected in native owner checkout](screenshots/11-free-owner-makepay-selected.jpg)
+
+![Native owner test opens the 10 USD hosted checkout](screenshots/12-free-owner-usd-checkout.jpg)
+
+![Wix thank-you page after signed simulated completion](screenshots/13-free-owner-order-confirmation.jpg)
+
+![Wix Orders confirms the original test order is Paid](screenshots/14-free-owner-paid-order.jpg)
 
 Wix's separate [free development sites](https://dev.wix.com/docs/build-apps/launch-your-app/app-distribution/test-your-app/test-your-app-on-a-premium-site) include Premium capabilities. Access in the current account prompts migration of all existing sites into a Studio workspace; that account-wide change has not been applied.
 
@@ -66,6 +80,6 @@ Wix's separate [free development sites](https://dev.wix.com/docs/build-apps/laun
 
 The test site has a free plan: Wix displays **Not accepting payments** for ordinary customers. Its owner-only test route verified native order creation, MakePay redirection and live Wix `submitEvent` handling with a simulated callback. No funded Wix checkout has been performed. Before production use, enable customer payments, fund a controlled checkout, verify the original order is paid, and replay its provider-generated signed delivery. Simulated callbacks are not proof of funded settlement.
 
-The screenshot walkthrough shows setup, currency preservation and the free owner test order. It does not depict a funded checkout. Screenshots and video exclude account-owner names and secret values.
+The [installation walkthrough](TUTORIAL.md) shows the setup steps and an unfunded hosted checkout example. This validation record keeps the currency and simulated-completion evidence separate from installation instructions. Screenshots and video exclude account-owner names and secret values.
 
 A real Demo Shop 2 API request using `amount: "10.00"` and `fiatCurrency: "EUR"`, without a settlement currency override, returned a hosted link displaying **10 EUR**. No funds were transferred. Fiat-priced callbacks require the MakeCrypto callback fields `fiatCurrency` and `fiatAmount`; settlement `currency` is not treated as the store price currency.

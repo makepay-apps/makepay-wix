@@ -16,6 +16,10 @@ refunds are not supported.
 
 ## Install
 
+Follow the [14-step installation guide with screenshots](docs/TUTORIAL.md) or
+[watch the captioned installation video](docs/makepay-wix-tutorial.mp4). Each step
+shows the Wix menu, exact file or configuration value to use.
+
 1. Enable **Dev Mode** in Wix Editor/Studio.
 2. Under **Backend & Public → Backend**, create `MakePay.js` and
    `http-functions.js`. Copy the files from `Backend/`.
@@ -38,8 +42,10 @@ refunds are not supported.
 https://your-wix-domain/_functions/makepay_notify
 ```
 
-Use an API key with `makepay:payment-links:read` and
-`makepay:payment-links:write`. Keep secrets in Secrets Manager. Each shop should
+In MakeCrypto **API & SDK → API Integrations**, copy the Company ID and generate
+a key with **MakePay** as the product and **All** as the access level. Save the key
+ID and secret; this access permits reading and creating payment links. Keep
+secrets in Secrets Manager. Each shop should
 have dedicated company credentials/callback routing. Wix may require a paid
 commerce plan before customers can complete checkout; publishing code alone
 does not verify payment processing.

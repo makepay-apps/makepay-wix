@@ -1,81 +1,176 @@
-# Install MakePay in Wix Editor or Studio
+# Install MakePay in Wix
 
-This is a merchant-installed Velo provider, following the CoinPal installation model. It is not an App Market app. Use your store currency. Customer payments require a payment-enabled Wix plan; the owner can test on a free site using the flow below. Harmony is not supported.
+Follow these steps in order to add **Pay with crypto · MakePay** to your store. This is a merchant-installed Velo payment provider for **Wix Editor or Wix Studio**, using the same installation approach as CoinPal. Use an Editor or Studio site; Wix Harmony cannot run these Velo files.
 
-[Watch the captioned screenshot walkthrough](makepay-wix-tutorial.mp4). The captures below come from the actual Editor test installation. They show configuration, native checkout and simulated completion. No payment was funded.
+[Open the source files](https://github.com/makepay-apps/makepay-wix) · [Watch the captioned installation video](makepay-wix-tutorial.mp4)
 
-## 1. Add the backend and payment plugin
+You need access to the site's code, CMS, Secrets Manager and payment settings. The screenshots show the classic Wix Editor; Studio may arrange these panels differently. Keep your store's price currency, such as EUR or USD. Crypto settlement is configured separately in MakeCrypto.
 
-Enable Dev Mode. Copy `Backend/MakePay.js` and `Backend/http-functions.js` into Backend. Append the HTTP function if your site already has that file. Create the Payment service plugin named `MakePayPayment`, accept Wix's terms, and copy both files from `MakePayPayment/` into it. Install npm `crypto-js` 4.2.0 in Packages & Apps.
+## 1. Get your MakePay credentials
 
-![Backend files installed in the expanded Wix code workspace](screenshots/01-backend-files.jpg)
+Open your company in MakeCrypto, then **API & SDK → API Integrations**. Copy the **Company ID**. Click **Generate API key**, give it a title such as `Wix store`, choose **MakePay** as the product and **All** as the access level, then create the key.
 
-## 2. Create the private collection
+![Create a key: title Wix store, product MakePay and access All](screenshots/setup-01-api-key.jpg)
 
-Create a multiple-item collection with ID `MakePayTransactions`. Restrict all permissions to Admin. Add eight Text fields: `orderId`, `companyId`, `amount`, `currency`, `state`, `linkUid`, `checkoutUrl`, `sessionId`. Keep the built-in `_id`.
+Save the **API key ID** and **API key secret**. The secret is shown only when the key is created. The backend needs permission to read and create MakePay payment links; the portal's **All** option supplies this access.
 
-![The eight transaction fields in CMS](screenshots/03-private-transaction-collection.jpg)
+In **Callback URL configuration**, obtain the company's **webhook signing secret**. If one already exists, use the value you saved when it was generated. A masked existing value cannot be recovered from the portal. If it is lost, coordinate a rotation and update every integration using it.
 
-## 3. Store secrets
+You should now have four values: **Company ID**, **API key ID**, **API key secret** and **webhook signing secret**. Configure the company's receiving assets and settlement in MakeCrypto before testing payments.
 
-In Developer Tools → Secrets Manager add `makepay_api_key_secret` and `makepay_webhook_secret`. Obtain the API credentials and company webhook signing secret from MakeCrypto → Integrations → API Integrations. Never show their values in screenshots or page code.
+## 2. Turn on Wix Dev Mode
 
-![Both secret names stored without exposing their values](screenshots/04-secrets-manager.jpg)
+Open **Edit Site** from the Wix dashboard. In the Editor's top bar, click **Dev Mode → Turn on Dev Mode**. The code workspace and backend tools will appear.
 
-## 4. Publish and configure the callback
+![Dev Mode menu with Turn on Dev Mode](screenshots/setup-02-dev-mode.jpg)
 
-Publish the site. Under MakeCrypto's Callback URL configuration set `https://YOUR-WIX-DOMAIN/_functions/makepay_notify`. A company has one default callback: use separate companies or reviewed routing for multiple stores. Copy a newly generated signing secret immediately; rotating it invalidates the old value.
+## 3. Create the two backend files
 
-![Published callback URL with masked signing secret](screenshots/05-callback-settings.jpg)
+In the left toolbar, open **Backend & Public**. Beside **Backend**, click **+ → Add .js file** and name the file `MakePay.js`. Repeat for `http-functions.js`.
 
-## 5. Connect MakePay
+![Backend plus menu and Add .js file](screenshots/setup-03-backend-menu.jpg)
 
-Open Wix Settings → Accept Payments. Connect **Pay with crypto · MakePay** using the company ID and API key ID. The connector validates the API credentials using your backend secret.
+If `http-functions.js` already exists, keep its other functions. You will add the MakePay import and HTTP function to that file in step 5.
 
-![Wix confirms MakePay connected and identifies the commerce-plan requirement](screenshots/06-provider-connected.jpg)
+## 4. Create the Payment service plugin
 
-A connected provider on a free site cannot accept ordinary customer payments. Use the owner test route below for QA without purchasing a plan. Keep the intended store currency in Language & Region. MakePay receives it as `fiatCurrency`; settlement follows the company configuration.
+In **Backend & Public**, beside **Service Plugins**, click **+ → Payment**.
 
-## 6. Verify a controlled checkout
+![Service Plugins plus menu with Payment](screenshots/setup-04-payment-plugin-menu.jpg)
 
-Use a product in your store currency above the MakePay minimum. Check the amount on hosted checkout. Returning without paying must leave the order unpaid. A confirmed payment should update the original Wix transaction through a signed callback. Replay that delivery to verify duplicate protection. See [testing evidence and remaining live checks](TESTING.md).
+Read and accept Wix's custom payment-provider terms. When Wix asks for a plugin name, enter exactly **MakePayPayment**, then click **Add & Edit Code**.
 
-## Installed currency checks
+![Plugin name dialog where MakePayPayment should be entered](screenshots/setup-04-plugin-name.jpg)
 
-The installed connector was exercised through Wix Editor's backend test runner using synthetic PSP arguments and the actual private collection, backend secrets and MakePay API. These are checkout-creation checks; they do not replace a funded native Wix order.
+Wix creates a plugin folder containing `MakePayPayment-config.js` and `MakePayPayment.js`.
 
-![Wix backend-created checkout preserves the 10 USD price](screenshots/07-runtime-usd-checkout.png)
+## 5. Copy the source into all four files
 
-![A separate Wix backend-created checkout preserves the 10 EUR price](screenshots/08-runtime-eur-checkout.png)
+Open each source link below. On GitHub, use **Raw** to view the complete file, then copy its contents into the matching Wix file. Save each file.
 
-The same USD transaction reused its original link on a second call. A request that changed the reserved currency to EUR was rejected. A new EUR transaction created its own link.
+| Source file | Where to paste it in Wix |
+| --- | --- |
+| [Backend/MakePay.js](https://github.com/makepay-apps/makepay-wix/blob/main/Backend/MakePay.js) | **Backend → MakePay.js** |
+| [Backend/http-functions.js](https://github.com/makepay-apps/makepay-wix/blob/main/Backend/http-functions.js) | **Backend → http-functions.js**; append the import and function if the file already exists |
+| [MakePayPayment-config.js](https://github.com/makepay-apps/makepay-wix/blob/main/MakePayPayment/MakePayPayment-config.js) | **Service Plugins → payment-provider → MakePayPayment → MakePayPayment-config.js** |
+| [MakePayPayment.js](https://github.com/makepay-apps/makepay-wix/blob/main/MakePayPayment/MakePayPayment.js) | **Service Plugins → payment-provider → MakePayPayment → MakePayPayment.js** |
 
-Ordinary customer checkout on the free site shows a plan restriction:
+Your file tree should now match this installed example:
 
-![Native Wix checkout requires a payment-enabled site plan](screenshots/09-native-checkout-plan-required.png)
+![The two backend files and two MakePayPayment plugin files in Wix](screenshots/setup-05-installed-files.jpg)
 
-## Free owner test order
+## 6. Install crypto-js
 
-1. Enable a Manual Payment option in Accept Payments and add the Members Area to the test site, following [Wix's owner test-order instructions](https://support.wix.com/en/article/previewing-the-checkout-process-1420066).
-2. Sign into the published storefront with the same account email as the site owner. A different member account does not unlock this route.
-3. Add a dedicated QA product to the cart. At checkout, click **I just want to place a test order**. Do not purchase an upgrade for this test.
+Open **Packages & Apps** in the Editor's left toolbar. Choose **Install packages from npm**, search for **crypto-js**, select the package named exactly `crypto-js`, and install version **4.2.0**.
 
-![The owner-only free test-order option](screenshots/10-free-owner-test-option.png)
+![Package Manager search for crypto-js, version 4.2.0, showing Installed](screenshots/setup-06-crypto-js.jpg)
 
-4. Enter synthetic QA delivery details, continue, and select **Pay with crypto · MakePay**. Place the test order and check the hosted amount.
+Continue when the package shows **Installed**.
 
-![MakePay selected in native owner test checkout](screenshots/11-free-owner-makepay-selected.jpg)
+## 7. Create the transaction collection
 
-![The native owner test order opens a 10 USD MakePay checkout](screenshots/12-free-owner-usd-checkout.jpg)
+Open **Databases → Your Collections → +**. Choose **Content collection → Next → Start from scratch → Next**. Enter `MakePay Transactions` as the collection name and **MakePayTransactions** as its **collection ID**. Select **Multiple item collection**, then click **Create**.
 
-5. On this isolated QA installation, a signed simulated completion was delivered to the published callback. Wix accepted the original payment transaction, and its duplicate was ignored. Returning from MakePay opened order #10001's native thank-you page; member history showed Confirmed. Expanding its details showed **Paid: $10.00**, **Balance due: $0.00**, and **Paid with MakePay**.
+![Create a collection form with name, collection ID and Multiple item collection](screenshots/setup-07-create-collection.jpg)
 
-![The native Wix thank-you page after simulated completion](screenshots/13-free-owner-order-confirmation.jpg)
+The display name can contain spaces; the collection ID must be exactly `MakePayTransactions`. Do not create a public dynamic page or connect this collection to page elements.
 
-![The Wix administration Orders list confirms the original QA order is Paid](screenshots/14-free-owner-paid-order.jpg)
+## 8. Restrict the collection to Admin
 
-This verifies native redirection and callback handling without transferring funds. It does not establish funded settlement. Never simulate completed payments for customer orders. See the [validation record](TESTING.md) for the exact test boundary.
+Beside the collection, open **… → Permissions & privacy**. Choose **Advanced**. Leave every **View**, **Add**, **Update** and **Delete** box unchecked for Everyone, Members, Item's creator and Collaborators. Only **Admin** should have access. Click **Save**.
 
-## Price currency and settlement
+![Advanced collection permissions: only Admin has View, Add, Update and Delete](screenshots/setup-08-admin-permissions.jpg)
 
-Wix's connection page includes a standard currency-matching notice. MakePay has no fixed account fiat currency: each payment link uses the store currency sent as `fiatCurrency`. EUR prices stay EUR and USD prices stay USD. The configured crypto settlement asset is separate. The connector converts Wix minor units using the currency precision (JPY has zero decimals; KWD has three).
+## 9. Add the eight Text fields
+
+Open the collection and choose **Manage Fields → Add Field**. Select **Text** as the field type. Replace the default field name and ID with the first value below, click **Save**, and repeat for all eight fields.
+
+![Add a field form with Text type, Field name and Field ID](screenshots/setup-09-add-text-field.jpg)
+
+| Field name | Exact field ID | Type |
+| --- | --- | --- |
+| orderId | `orderId` | Text |
+| companyId | `companyId` | Text |
+| amount | `amount` | Text |
+| currency | `currency` | Text |
+| state | `state` | Text |
+| linkUid | `linkUid` | Text |
+| checkoutUrl | `checkoutUrl` | Text |
+| sessionId | `sessionId` | Text |
+
+Keep Wix's built-in fields, including `_id`. Check that all eight new fields appear in **Manage Fields**:
+
+![Manage Fields lists all eight transaction fields with the Text type icon](screenshots/setup-09-field-list.jpg)
+
+## 10. Add the two backend secrets
+
+Return to the Wix dashboard and open **Developer Tools → Secrets Manager → Add Secret**. Create each entry below. Enter the name exactly, paste its value, and click **Add Secret**.
+
+| Secret name in Wix | Value from MakeCrypto |
+| --- | --- |
+| `makepay_api_key_secret` | The API key secret from step 1 |
+| `makepay_webhook_secret` | The company's webhook signing secret from step 1 |
+
+![Add secret form with makepay_api_key_secret as the Name and an empty Value field](screenshots/setup-10-add-secret.jpg)
+
+The screenshot leaves **Value** empty for privacy; paste your real secret there. Repeat for `makepay_webhook_secret`. Keep both values in Secrets Manager.
+
+## 11. Publish the site
+
+Return to the Editor and click **Publish** in the top-right corner. Wait for Wix to confirm publication. The files, npm package, collection and secrets must all be ready before proceeding.
+
+![Publish button in the Wix Editor toolbar](screenshots/setup-11-publish.jpg)
+
+## 12. Save the callback URL in MakeCrypto
+
+In MakeCrypto, open **API & SDK → API Integrations → Callback URL configuration → Set up Callback URL** (or **Edit Callback URL**). Enter your **published site's URL** followed by `/_functions/makepay_notify`, then click **Save**.
+
+```text
+https://YOUR-WIX-DOMAIN/_functions/makepay_notify
+```
+
+![MakeCrypto callback URL dialog with a published Wix site endpoint and Save](screenshots/setup-12-callback-url.jpg)
+
+The screenshot uses our QA site as an example. Replace that domain and site path with yours. Use `/_functions/`, not `/_functions-dev/`. A company has one default callback URL; use a separate company for a store that needs a different callback from your existing integrations.
+
+## 13. Connect MakePay in Wix
+
+Open **Wix dashboard → Settings → Accept Payments → See More Payment Options**. Find **MakePay** and click **Connect**. Enter these two values, then click **Connect** on the form:
+
+| Wix connection field | Value |
+| --- | --- |
+| MakePay company ID | Company ID copied in step 1 |
+| MakePay API key ID | API key ID saved in step 1 |
+
+The API key **secret** belongs in Secrets Manager, not in these two fields. After a successful connection, Wix shows **MakePay connected** and the payment method **Pay with crypto · MakePay**.
+
+Wix may display a general notice about matching account currencies. Keep your store currency: EUR-priced orders open EUR payment links and USD-priced orders open USD payment links. The crypto settlement asset does not change the store's price currency.
+
+## 14. Check the customer checkout
+
+Open your published store, add a test product priced above MakePay's minimum, and proceed to checkout. Select **Pay with crypto · MakePay**, place the order and check that the hosted MakePay checkout displays the original amount and currency.
+
+![Example native Wix owner test order opens a MakePay checkout for 10 USD](screenshots/12-free-owner-usd-checkout.jpg)
+
+This example is an unfunded QA checkout. Returning without paying must leave the order unpaid. For production validation, complete a controlled payment and confirm that the original Wix order becomes **Paid** after its signed webhook. Review failures in MakeCrypto's **Webhook requests**. Returning to Wix alone does not confirm payment.
+
+### Free owner test order
+
+For a free QA site, follow [Wix's owner test-order instructions](https://support.wix.com/en/article/previewing-the-checkout-process-1420066):
+
+1. Enable a **Manual Payment** option in Accept Payments and add the **Members Area** to the site.
+2. Sign into the published storefront with the **same email as the Wix site owner**.
+3. Add a dedicated QA product and choose **I just want to place a test order** at checkout.
+4. Continue with QA details, select **Pay with crypto · MakePay**, and verify the hosted amount.
+
+This route does not require buying a plan. Ordinary customer payments require a payment-enabled Wix plan. See the [validation record](TESTING.md) for USD/EUR checks, simulated callbacks and the native test-order results.
+
+## Troubleshooting
+
+- **No backend tools:** enable Dev Mode on an Editor or Studio site. Harmony does not support this connector.
+- **No MakePay provider:** check the plugin name, both service-plugin files, crypto-js installation and successful publication.
+- **Connection rejected:** check the company ID, key ID, MakePay API access and both backend secret names and values.
+- **Checkout blocked on a free site:** use the owner test route above for QA, or enable a payment-capable plan for customer payments.
+- **Paid checkout but unpaid Wix order:** check the published callback URL, matching webhook secret and all eight collection field IDs, then retry the failed delivery.
+- **Creation pending:** follow the [recovery procedure](https://github.com/makepay-apps/makepay-wix#recovery) before creating another link for the same order.
+- **Refunds:** issue and verify them manually in MakePay, then record them in Wix. Automated refunds are not supported.
