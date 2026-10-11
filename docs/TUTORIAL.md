@@ -1,6 +1,6 @@
 # Install MakePay in Wix Editor or Studio
 
-This is a merchant-installed Velo provider, following the CoinPal installation model. It is not an App Market app. Use a USD store and a payment-enabled Wix plan. Harmony is not supported.
+This is a merchant-installed Velo provider, following the CoinPal installation model. It is not an App Market app. Use your store currency and a payment-enabled Wix plan. Harmony is not supported.
 
 [Watch the captioned screenshot walkthrough](makepay-wix-tutorial.mp4). The captures below come from the actual Editor test installation. They show configuration and connection, not a funded payment.
 
@@ -34,8 +34,12 @@ Open Wix Settings → Accept Payments. Connect **Pay with crypto · MakePay** us
 
 ![Wix confirms MakePay connected and identifies the commerce-plan requirement](screenshots/06-provider-connected.jpg)
 
-A connected provider on a free site still cannot accept payments. Enable a commerce plan before a live checkout. Set the store currency to USD in Language & Region.
+A connected provider on a free site still cannot accept payments. Enable a commerce plan before a live checkout. Keep the intended store currency in Language & Region. MakePay receives it as `fiatCurrency`; settlement follows the company configuration.
 
 ## 6. Verify a controlled checkout
 
-Use a USD product above the MakePay minimum. Check the amount on hosted checkout. Returning without paying must leave the order unpaid. A confirmed payment should update the original Wix transaction through a signed callback. Replay that delivery to verify duplicate protection. See [testing evidence and remaining live checks](TESTING.md).
+Use a product in your store currency above the MakePay minimum. Check the amount on hosted checkout. Returning without paying must leave the order unpaid. A confirmed payment should update the original Wix transaction through a signed callback. Replay that delivery to verify duplicate protection. See [testing evidence and remaining live checks](TESTING.md).
+
+## Price currency and settlement
+
+Wix's connection page includes a standard currency-matching notice. MakePay has no fixed account fiat currency: each payment link uses the store currency sent as `fiatCurrency`. EUR prices stay EUR and USD prices stay USD. The configured crypto settlement asset is separate. The connector converts Wix minor units using the currency precision (JPY has zero decimals; KWD has three).

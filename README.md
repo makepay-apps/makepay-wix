@@ -9,9 +9,9 @@ provider in Accept Payments. It is not a Wix App Market app or an approved publi
 payment-provider listing.
 
 **Wix Harmony does not support Velo/custom code.** Use Editor or Studio for this
-connector. The first release supports USD store prices, with supported crypto
-assets selected at hosted checkout. Other fiat currencies are rejected instead
-of silently mispriced. Configure stablecoin settlement in MakeCrypto. Automated
+connector. Store prices retain their currency (for example EUR or USD) through
+MakePay `fiatCurrency`. Crypto settlement follows the merchant configuration;
+it does not change the order price currency. Configure settlement in MakeCrypto. Automated
 refunds are not supported.
 
 ## Install
@@ -46,7 +46,7 @@ does not verify payment processing.
 
 ## Test
 
-Use a USD product above MakePay's minimum amount, open checkout, select MakePay,
+Use a product in your store currency above MakePay's minimum amount, open checkout, select MakePay,
 and confirm the hosted link amount. Payment is recorded via Wix's original
 payment transaction only after a signed complete callback. Redirecting back,
 receiving a deposit or underpayment does not approve an order.
