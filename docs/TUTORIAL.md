@@ -68,9 +68,11 @@ Ordinary customer checkout on the free site shows a plan restriction:
 
 ![The native owner test order opens a 10 USD MakePay checkout](screenshots/12-free-owner-usd-checkout.jpg)
 
-5. On this isolated QA installation, a signed simulated completion was delivered to the published callback. Wix accepted the original payment transaction, and its duplicate was ignored. Returning from MakePay opened order #10001's native thank-you page; member history showed Confirmed.
+5. On this isolated QA installation, a signed simulated completion was delivered to the published callback. Wix accepted the original payment transaction, and its duplicate was ignored. Returning from MakePay opened order #10001's native thank-you page; member history showed Confirmed. Expanding its details showed **Paid: $10.00**, **Balance due: $0.00**, and **Paid with MakePay**.
 
 ![The native Wix thank-you page after simulated completion](screenshots/13-free-owner-order-confirmation.jpg)
+
+![The Wix administration Orders list confirms the original QA order is Paid](screenshots/14-free-owner-paid-order.jpg)
 
 This verifies native redirection and callback handling without transferring funds. It does not establish funded settlement. Never simulate completed payments for customer orders. See the [validation record](TESTING.md) for the exact test boundary.
 

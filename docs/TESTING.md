@@ -55,8 +55,10 @@ Wix documents [owner-only test orders](https://support.wix.com/en/article/previe
 | Deliver a matching signed QA complete event | 200, `Transaction completed.`; the installed handler called Wix `submitEvent` successfully |
 | Replay that QA complete event | 200, `Already completed.` |
 | Return from hosted checkout to Wix | Native thank-you page for order **#10001**, $10 total and MakePay payment method; member order history showed **Confirmed** |
+| Expand the native member order details | **Paid: $10.00**, **Balance due: $0.00**, **Paid with Pay with crypto · MakePay** |
+| Inspect the Wix administration Orders list | Original order **#10001** showed **Paid**, $10.00 and customer MakePay QA |
 
-The completion event was simulated with an explicitly QA session ID. MakePay received no funds and no real completed payment session was created. The customer order-history label **Confirmed** is not independent proof of a funded payment. The administration session expired before its payment status could be inspected. See the [name-free owner-test screenshots](TUTORIAL.md#free-owner-test-order).
+The completion event was simulated with an explicitly QA session ID. MakePay received no funds and no real completed payment session was created. The native paid amount and zero balance verify Wix's test-order update after the callback; they do not prove funded settlement. See the [name-free owner-test screenshots](TUTORIAL.md#free-owner-test-order).
 
 Wix's separate [free development sites](https://dev.wix.com/docs/build-apps/launch-your-app/app-distribution/test-your-app/test-your-app-on-a-premium-site) include Premium capabilities. Access in the current account prompts migration of all existing sites into a Studio workspace; that account-wide change has not been applied.
 
