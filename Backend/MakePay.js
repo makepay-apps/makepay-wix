@@ -28,22 +28,22 @@ export async function createTransaction(options) {
     const transactionId = options.wixTransactionId;
     if (!transactionId || !order._id) throw new Error('Wix transaction and order IDs are required.');
     // The PSP contract uses minor units, not the eCommerce Order priceSummary.
-    if (description.currency !== 'USD') throw new Error('This version requires a USD store; other fiat currencies need an explicit conversion service.');
-    const amount = minorUnitsToUsd(description.totalAmount);
+    const currency = description.currency;
+    const amount = minorUnitsToAmount(description.totalAmount, currency);
     const urls = order.returnUrls || {};
     if (!urls.successUrl || !urls.errorUrl || !urls.cancelUrl) throw new Error('Wix return URLs are missing.');
     const existing = await wixData.get(COLLECTION, transactionId, DB).catch(() => null);
     if (existing) {
-      if (existing.amount !== amount || existing.companyId !== credentials.company_id || existing.orderId !== order._id) throw new Error('Transaction details changed.');
+      if (existing.amount !== amount || existing.currency !== currency || existing.companyId !== credentials.company_id || existing.orderId !== order._id) throw new Error('Transaction details changed.');
       if (existing.checkoutUrl && existing.linkUid) return { pluginTransactionId: existing.linkUid, redirectUrl: existing.checkoutUrl };
       throw new Error('Transaction creation is pending. Inspect the MakePay request before retrying.');
     }
     // A unique Wix transaction ID reserves creation across concurrent calls.
     const record = await wixData.insert(COLLECTION, { _id: transactionId, orderId: order._id,
-      companyId: credentials.company_id, amount, currency: 'USD', state: 'creating' }, DB);
+      companyId: credentials.company_id, amount, currency, state: 'creating' }, DB);
     const result = await api(credentials, 'POST', '/payment-links', {
       source: 'wix', status: 'active', sendPaymentRequestEmail: false,
-      payload: { title: `Wix order ${order._id}`, amount, currency: 'USD',
+      payload: { title: `Wix order ${order._id}`, amount, fiatCurrency: currency,
         orderId: `wix_${transactionId}`, clientEmail: description.billingAddress?.email || '',
         returnUrl: urls.pendingUrl || urls.successUrl, successUrl: urls.successUrl,
         failureUrl: urls.errorUrl, cancelUrl: urls.cancelUrl, expirationTime: '12h' },
@@ -70,8 +70,10 @@ export async function notify(request) {
     const result = await wixData.query(COLLECTION).eq('linkUid', link.uid).find(DB);
     const record = result.items[0];
     if (!record) return reply(404, 'Unknown payment link.');
-    if (link.merchantOrderId !== `wix_${record._id}` || link.currency !== record.currency ||
-      !sameAmount(link.amount, record.amount)) return reply(400, 'Payment does not match the checkout.');
+    // Fiat price and crypto settlement currency are separate API fields.
+    const fiatCurrency = link.fiatCurrency || (link.currency === 'USD' ? 'USD' : null);
+    if (link.merchantOrderId !== `wix_${record._id}` || fiatCurrency !== record.currency ||
+      !sameAmount(link.fiatAmount ?? link.amount, record.amount)) return reply(400, 'Payment does not match the checkout.');
     if (record.state === 'complete') return reply(200, 'Already completed.');
     // Completing the original PSP transaction lets Wix update the order itself.
     // Repeated delivery uses the same transaction IDs, including after a lost reply.
@@ -97,13 +99,22 @@ export function verifyMakePaySignature(raw, header, secret, now = Date.now() / 1
   for (let i = 0; i < 64; i++) difference |= expected.charCodeAt(i) ^ match[2].charCodeAt(i);
   return difference === 0;
 }
-export function minorUnitsToUsd(value) {
+export function minorUnitsToAmount(value, currency) {
+  if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) throw new Error('Invalid Wix price currency.');
+  const precision = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits;
   const text = String(value ?? '');
-  if (!/^\d+$/.test(text) || !Number.isSafeInteger(Number(text)) || Number(text) <= 0) throw new Error('Invalid Wix USD amount.');
-  const padded = text.padStart(3, '0');
-  return `${padded.slice(0, -2)}.${padded.slice(-2)}`;
+  if (!/^\d+$/.test(text) || !Number.isSafeInteger(Number(text)) || Number(text) <= 0) throw new Error('Invalid Wix checkout amount.');
+  const normalized = text.replace(/^0+(?=\d)/, '');
+  if (!precision) return normalized;
+  const padded = normalized.padStart(precision + 1, '0');
+  return `${padded.slice(0, -precision)}.${padded.slice(-precision)}`;
 }
-function sameAmount(a, b) { return /^\d+(\.\d+)?$/.test(String(a)) && Number(a) === Number(b); }
+function sameAmount(a, b) {
+  const normalize = value => /^\d+(\.\d+)?$/.test(String(value))
+    ? String(value).replace(/^0+(?=\d)/, '').replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '') : null;
+  const amount = normalize(a);
+  return amount !== null && amount === normalize(b);
+}
 function isHostedUrl(value) {
   try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password; } catch (_) { return false; }
 }
