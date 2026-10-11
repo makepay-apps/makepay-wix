@@ -46,6 +46,8 @@ Wix creates a plugin folder containing `MakePayPayment-config.js` and `MakePayPa
 
 ## 5. Copy the source into all four files
 
+**GitHub repository:** [makepay-apps/makepay-wix](https://github.com/makepay-apps/makepay-wix)
+
 Open each source link below. On GitHub, use **Raw** to view the complete file, then copy its contents into the matching Wix file. Save each file.
 
 | Source file | Where to paste it in Wix |
