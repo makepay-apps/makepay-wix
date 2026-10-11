@@ -1,8 +1,8 @@
 # Install MakePay in Wix Editor or Studio
 
-This is a merchant-installed Velo provider, following the CoinPal installation model. It is not an App Market app. Use your store currency and a payment-enabled Wix plan. Harmony is not supported.
+This is a merchant-installed Velo provider, following the CoinPal installation model. It is not an App Market app. Use your store currency. Customer payments require a payment-enabled Wix plan; the owner can test on a free site using the flow below. Harmony is not supported.
 
-[Watch the captioned screenshot walkthrough](makepay-wix-tutorial.mp4). The captures below come from the actual Editor test installation. They show configuration and connection, not a funded payment.
+[Watch the captioned screenshot walkthrough](makepay-wix-tutorial.mp4). The captures below come from the actual Editor test installation. They show configuration, native checkout and simulated completion. No payment was funded.
 
 ## 1. Add the backend and payment plugin
 
@@ -34,7 +34,7 @@ Open Wix Settings → Accept Payments. Connect **Pay with crypto · MakePay** us
 
 ![Wix confirms MakePay connected and identifies the commerce-plan requirement](screenshots/06-provider-connected.jpg)
 
-A connected provider on a free site still cannot accept payments. Enable a commerce plan before a live checkout. Keep the intended store currency in Language & Region. MakePay receives it as `fiatCurrency`; settlement follows the company configuration.
+A connected provider on a free site cannot accept ordinary customer payments. Use the owner test route below for QA without purchasing a plan. Keep the intended store currency in Language & Region. MakePay receives it as `fiatCurrency`; settlement follows the company configuration.
 
 ## 6. Verify a controlled checkout
 
@@ -50,9 +50,29 @@ The installed connector was exercised through Wix Editor's backend test runner u
 
 The same USD transaction reused its original link on a second call. A request that changed the reserved currency to EUR was rejected. A new EUR transaction created its own link.
 
-The native storefront's $10 USD QA product reached checkout with the correct total, but the free site plan blocked payment selection:
+Ordinary customer checkout on the free site shows a plan restriction:
 
 ![Native Wix checkout requires a payment-enabled site plan](screenshots/09-native-checkout-plan-required.png)
+
+## Free owner test order
+
+1. Enable a Manual Payment option in Accept Payments and add the Members Area to the test site, following [Wix's owner test-order instructions](https://support.wix.com/en/article/previewing-the-checkout-process-1420066).
+2. Sign into the published storefront with the same account email as the site owner. A different member account does not unlock this route.
+3. Add a dedicated QA product to the cart. At checkout, click **I just want to place a test order**. Do not purchase an upgrade for this test.
+
+![The owner-only free test-order option](screenshots/10-free-owner-test-option.png)
+
+4. Enter synthetic QA delivery details, continue, and select **Pay with crypto · MakePay**. Place the test order and check the hosted amount.
+
+![MakePay selected in native owner test checkout](screenshots/11-free-owner-makepay-selected.jpg)
+
+![The native owner test order opens a 10 USD MakePay checkout](screenshots/12-free-owner-usd-checkout.jpg)
+
+5. On this isolated QA installation, a signed simulated completion was delivered to the published callback. Wix accepted the original payment transaction, and its duplicate was ignored. Returning from MakePay opened order #10001's native thank-you page; member history showed Confirmed.
+
+![The native Wix thank-you page after simulated completion](screenshots/13-free-owner-order-confirmation.jpg)
+
+This verifies native redirection and callback handling without transferring funds. It does not establish funded settlement. Never simulate completed payments for customer orders. See the [validation record](TESTING.md) for the exact test boundary.
 
 ## Price currency and settlement
 
