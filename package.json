@@ -1,0 +1,13 @@
+{
+  "name": "@makepay/wix",
+  "version": "1.0.0-rc.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "crypto-js": "4.2.0"
+  }
+}
