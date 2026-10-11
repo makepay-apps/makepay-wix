@@ -1,6 +1,6 @@
 # MakePay Wix Velo payment provider
 
-**1.0.0-rc.1:** connection and local integration checks passed; funded settlement remains a rollout prerequisite. See [validation evidence](docs/TESTING.md).
+**1.0.0-rc.1:** connection, USD/EUR checkout creation, native free owner checkout and simulated completion checks passed; funded settlement remains a rollout prerequisite. See [validation evidence](docs/TESTING.md).
 
 Merchant-installed Velo files for **Wix Editor and Wix Studio**. This follows the
 same installation model as CoinPal's Wix connector: enable Dev Mode, copy backend
@@ -50,6 +50,11 @@ Use a product in your store currency above MakePay's minimum amount, open checko
 and confirm the hosted link amount. Payment is recorded via Wix's original
 payment transaction only after a signed complete callback. Redirecting back,
 receiving a deposit or underpayment does not approve an order.
+
+For QA without purchasing a plan, use Wix's owner-only test-order route: enable
+Manual Payment, add Members Area, sign into the published storefront with the
+site owner's account, then choose **I just want to place a test order**. MakePay
+was verified in this native flow. Follow the [screenshot steps](docs/TUTORIAL.md#free-owner-test-order).
 
 ```bash
 npm ci
